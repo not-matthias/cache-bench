@@ -12,16 +12,16 @@ pub mod compare_exchange {
         static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
 
         let _ =
-            CACHED_VALUE.compare_exchange(u64::MAX, calc_value(), Ordering::Relaxed, Ordering::Relaxed);
+            CACHED_VALUE.compare_exchange(u64::MAX, calc_value(), Ordering::Acquire, Ordering::Relaxed);
 
-        CACHED_VALUE.load(Ordering::Relaxed)
+        CACHED_VALUE.load(Ordering::Acquire)
     }
 
     pub fn cache_1() -> u64 {
         static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
 
         let calc_value = calc_value();
-        match CACHED_VALUE.compare_exchange(u64::MAX, calc_value, Ordering::Relaxed, Ordering::Relaxed)
+        match CACHED_VALUE.compare_exchange(u64::MAX, calc_value, Ordering::Acquire, Ordering::Relaxed)
         {
             Ok(_) => {
                 // Write was successful
@@ -66,6 +66,19 @@ pub mod load_store {
     pub fn cache_0() -> u64 {
         static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
 
+        let value = CACHED_VALUE.load(Ordering::Acquire);
+        if value != u64::MAX {
+            return value;
+        }
+
+        let value = calc_value();
+        CACHED_VALUE.store(value, Ordering::Release);
+        value
+    }
+
+    pub fn cache_1() -> u64 {
+        static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
+
         let value = CACHED_VALUE.load(Ordering::Relaxed);
         if value != u64::MAX {
             return value;
@@ -73,19 +86,6 @@ pub mod load_store {
 
         let value = calc_value();
         CACHED_VALUE.store(value, Ordering::Relaxed);
-        value
-    }
-
-    pub fn cache_1() -> u64 {
-        static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
-
-        let value = CACHED_VALUE.load(Ordering::SeqCst);
-        if value != u64::MAX {
-            return value;
-        }
-
-        let value = calc_value();
-        CACHED_VALUE.store(value, Ordering::SeqCst);
         value
     }
 }
