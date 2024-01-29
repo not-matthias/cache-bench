@@ -1,15 +1,52 @@
 #![no_std]
 
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::{
+    hint::black_box,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
+#[cold]
 fn calc_value() -> u64 {
-    42
+    black_box(x86::cpuid::cpuid!(0).eax as u64)
+}
+
+pub mod no_cache {
+    use super::*;
+
+    pub fn cached_value() -> u64 {
+        calc_value()
+    }
+}
+
+pub mod once_cell_crate {
+    use once_cell::sync::OnceCell;
+
+    use super::*;
+
+    pub fn cached_value() -> u64 {
+        static CACHED_VALUE: OnceCell<u64> = OnceCell::new();
+        *CACHED_VALUE.get_or_init(calc_value)
+    }
+}
+
+pub mod lazy_static_crate {
+    use lazy_static::lazy_static;
+
+    use super::*;
+
+    pub fn cached_value() -> u64 {
+        lazy_static! {
+            static ref CACHED_VALUE: u64 = calc_value();
+        }
+
+        *CACHED_VALUE
+    }
 }
 
 pub mod compare_exchange {
     use super::*;
 
-    pub fn cache_0() -> u64 {
+    pub fn cached_value() -> u64 {
         static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
 
         let _ = CACHED_VALUE.compare_exchange(
@@ -21,65 +58,12 @@ pub mod compare_exchange {
 
         CACHED_VALUE.load(Ordering::Acquire)
     }
-
-    pub fn cache_1() -> u64 {
-        static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
-
-        let calc_value = calc_value();
-        match CACHED_VALUE.compare_exchange(
-            u64::MAX,
-            calc_value,
-            Ordering::Acquire,
-            Ordering::Relaxed,
-        ) {
-            Ok(_) => {
-                // Write was successful
-                calc_value
-            }
-            Err(value) => value,
-        }
-    }
-}
-
-pub mod compare_exchange_weak {
-    use super::*;
-
-    pub fn cache_0() -> u64 {
-        static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
-
-        let _ = CACHED_VALUE.compare_exchange_weak(
-            u64::MAX,
-            calc_value(),
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        );
-
-        CACHED_VALUE.load(Ordering::Relaxed)
-    }
-
-    pub fn cache_1() -> u64 {
-        static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
-
-        let calc_value = calc_value();
-        match CACHED_VALUE.compare_exchange_weak(
-            u64::MAX,
-            calc_value,
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        ) {
-            Ok(_) => {
-                // Write was successful
-                calc_value
-            }
-            Err(value) => value,
-        }
-    }
 }
 
 pub mod load_store {
     use super::*;
 
-    pub fn cache_0() -> u64 {
+    pub fn cached_value() -> u64 {
         static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
 
         let value = CACHED_VALUE.load(Ordering::Acquire);
@@ -91,81 +75,21 @@ pub mod load_store {
         CACHED_VALUE.store(value, Ordering::Release);
         value
     }
-
-    pub fn cache_1() -> u64 {
-        static CACHED_VALUE: AtomicU64 = AtomicU64::new(u64::MAX);
-
-        let value = CACHED_VALUE.load(Ordering::Relaxed);
-        if value != u64::MAX {
-            return value;
-        }
-
-        let value = calc_value();
-        CACHED_VALUE.store(value, Ordering::Relaxed);
-        value
-    }
 }
 
 pub mod unsafe_static {
     use super::*;
 
-    pub fn cache_0() -> u64 {
+    pub fn cached_value() -> u64 {
         static mut CACHED_VALUE: u64 = u64::MAX;
 
         let value = unsafe { CACHED_VALUE };
         if value != u64::MAX {
             return value;
-        } 
+        }
 
         let value = calc_value();
         unsafe { CACHED_VALUE = value };
         value
-    }
-}
-
-pub mod lazy_static_crate {
-    use lazy_static::lazy_static;
-
-    use super::*;
-
-    pub fn cache_0() -> u64 {
-        lazy_static!{
-            static ref CACHED_VALUE: u64 = calc_value();
-        }
-
-        *CACHED_VALUE
-    }
-}
-
-pub mod once_cell_crate {
-    use once_cell::sync::Lazy;
-    use once_cell::sync::OnceCell;
-
-    use super::*;
-
-    pub fn cache_0() -> u64 {
-        static CACHED_VALUE: Lazy<u64> = Lazy::new(calc_value);
-
-        *CACHED_VALUE
-    }
-
-    pub fn cache_1() -> u64 {
-        static CACHED_VALUE: OnceCell<u64> = OnceCell::new();
-        *CACHED_VALUE.get_or_init(calc_value)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_values() {
-        assert_eq!(compare_exchange::cache_0(), calc_value());
-        assert_eq!(compare_exchange::cache_1(), calc_value());
-        assert_eq!(compare_exchange_weak::cache_0(), calc_value());
-        assert_eq!(compare_exchange_weak::cache_1(), calc_value());
-        assert_eq!(load_store::cache_0(), calc_value());
-        assert_eq!(load_store::cache_1(), calc_value());
     }
 }
