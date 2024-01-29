@@ -29,6 +29,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "lazy_static",
+ "microbench",
  "once_cell",
  "x86",
 ]
@@ -286,6 +287,12 @@ name = "memchr"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
+
+[[package]]
+name = "microbench"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4c44e40aee4e6fd2f4257bb91e5948ce79285aeb949129448889cf2fbf6da0b"
 
 [[package]]
 name = "num-traits"
