@@ -137,6 +137,23 @@ pub mod lazy_static_crate {
     }
 }
 
+pub mod once_cell_crate {
+    use once_cell::sync::Lazy;
+    use once_cell::sync::OnceCell;
+
+    use super::*;
+
+    pub fn cache_0() -> u64 {
+        static CACHED_VALUE: Lazy<u64> = Lazy::new(calc_value);
+
+        *CACHED_VALUE
+    }
+
+    pub fn cache_1() -> u64 {
+        static CACHED_VALUE: OnceCell<u64> = OnceCell::new();
+        *CACHED_VALUE.get_or_init(calc_value)
+    }
+}
 
 #[cfg(test)]
 mod tests {

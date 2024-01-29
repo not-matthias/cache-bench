@@ -1,4 +1,4 @@
-use atomic_cache_bench::{compare_exchange, compare_exchange_weak, load_store, unsafe_static, lazy_static_crate};
+use atomic_cache_bench::{compare_exchange, compare_exchange_weak, lazy_static_crate, load_store, once_cell_crate, unsafe_static};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn bench_compare_exchange(c: &mut Criterion) {
@@ -25,7 +25,14 @@ fn bench_lazy_static(c: &mut Criterion) {
     c.bench_function("lazy static 1", |b| b.iter(|| lazy_static_crate::cache_0()));
 }
 
+fn bench_once_cell(c: &mut Criterion) {
+    c.bench_function("once cell 1", |b| b.iter(|| once_cell_crate::cache_0()));
+    c.bench_function("once cell 2", |b| b.iter(|| once_cell_crate::cache_0()));
+}
+
 criterion_group!(benches, 
     bench_compare_exchange, bench_compare_exchange_weak,
-     bench_load_store, bench_unsafe_static, bench_lazy_static);
+     bench_load_store, bench_unsafe_static, bench_lazy_static,
+     bench_once_cell
+);
 criterion_main!(benches);
