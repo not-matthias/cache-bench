@@ -1,4 +1,6 @@
-use std::sync::atomic::{AtomicU64, Ordering};
+#![no_std]
+
+use core::sync::atomic::{AtomicU64, Ordering};
 
 fn calc_value() -> u64 {
     42
