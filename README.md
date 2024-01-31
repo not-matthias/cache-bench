@@ -1,5 +1,5 @@
 # cache-bench
-Benchmarking  different cache implementations.
+Benchmarking  different cache implementations. Read more about this on my blog: https://not-matthias.github.io/posts/cache-bench/
 
 ## Results
 
